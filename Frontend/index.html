@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Great Foot Wear, Manali, Chennai – shop footwear for men, women and kids online. Home delivery or store pickup." />
+    <meta property="og:site_name" content="Great Foot Wear" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Great Foot Wear" />
+    <meta property="og:description" content="Shop footwear for men, women and kids online." />
+    <title>Great Foot Wear</title>
+    <script>
+      // apply the saved theme before the app loads so the page does not flash white
+      try {
+        // light unless the visitor chose dark ("system" from older versions counts as light)
+        var t = localStorage.getItem("gfw-theme")
+        if (t !== "light" && t !== "dark") localStorage.removeItem("gfw-theme")
+        if (t === "dark") document.documentElement.classList.add("dark")
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

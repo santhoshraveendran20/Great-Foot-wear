@@ -1,0 +1,27 @@
+fastapi>=0.118
+uvicorn[standard]>=0.37
+gunicorn>=23.0
+SQLAlchemy>=2.0.43,<2.1
+alembic>=1.16
+pydantic>=2.12,<3
+pydantic-settings>=2.11
+email-validator>=2.3
+python-multipart>=0.0.20
+PyMySQL>=1.1.2
+cryptography>=46.0
+passlib[bcrypt]==1.7.4
+# passlib 1.7.4 is incompatible with bcrypt>=4.1, keep this pin
+bcrypt==4.0.1
+python-jose[cryptography]>=3.5
+razorpay>=1.4.2
+reportlab>=4.4
+Pillow>=11.3
+openpyxl>=3.1.5
+rapidfuzz>=3.14
+httpx>=0.28
+# Google sign-in (UM-04): ID token verification
+google-auth>=2.35
+requests>=2.32
+# Image storage backends (BRD 9.1 "Files": S3 / Cloudinary with CDN)
+boto3>=1.35
+cloudinary>=1.41
