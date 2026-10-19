@@ -145,3 +145,27 @@ Status column: ✅ built · ⚙️ built and needs configuration or a third-part
   - block and unblock customers.
 
 The API enforces every rule; the menu only hides items.
+
+---
+
+## Android app (APK)
+
+The `Frontend/android/` folder wraps the React app with Capacitor. The phone talks to the
+public backend, so the backend must be on HTTPS first.
+
+Backend `.env` for the app:
+
+```
+COOKIE_SECURE=true
+COOKIE_SAMESITE=none
+CORS_ORIGINS=https://your-site.com,https://localhost
+MEDIA_URL=https://api.your-site.com/media
+```
+
+Build (needs JDK 21 and the Android SDK; `android/local.properties` points to the SDK):
+
+```powershell
+cd Frontend
+copy .env.android.example .env.android   # set VITE_API_URL=https://api.your-site.com
+npm run apk                               # -> android/app/build/outputs/apk/debug/app-debug.apk
+```

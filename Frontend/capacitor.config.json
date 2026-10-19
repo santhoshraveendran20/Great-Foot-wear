@@ -1,0 +1,8 @@
+{
+  "appId": "in.greatfootwear.app",
+  "appName": "Great Foot Wear",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  }
+}

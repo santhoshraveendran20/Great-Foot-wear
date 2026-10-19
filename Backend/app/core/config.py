@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_MINUTES: int = 15
     REFRESH_TOKEN_DAYS: int = 7
     COOKIE_SECURE: bool = False  # set True in production (HTTPS everywhere, NF-04)
+    COOKIE_SAMESITE: str = "lax"  # "none" (with COOKIE_SECURE=true) when the Android app is used
 
     # URLs
     FRONTEND_URL: str = "http://localhost:5173"

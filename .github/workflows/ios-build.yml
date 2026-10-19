@@ -1,0 +1,75 @@
+# Builds an unsigned iOS app (.ipa) on a GitHub macOS runner and publishes it
+# on the "ios-build" release. Sign and install it with Sideloadly / AltStore,
+# or use an Apple Developer account for TestFlight / App Store.
+#
+# Backend address: set the repository variable VITE_API_URL
+# (Settings -> Secrets and variables -> Actions -> Variables).
+name: iOS build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "Frontend/**"
+      - ".github/workflows/ios-build.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  ios:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: Frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Build web app
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://api.example.com' }}
+        run: npx vite build
+
+      - name: Sync iOS project
+        run: npx cap sync ios
+
+      - name: Build app (unsigned)
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package .ipa
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr GreatFootWear-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GreatFootWear-ios
+          path: Frontend/GreatFootWear-unsigned.ipa
+
+      - name: Publish on release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view ios-build >/dev/null 2>&1 || \
+            gh release create ios-build --title "iOS build (unsigned)" \
+              --notes "Unsigned iOS app. Install with Sideloadly or AltStore using your Apple ID."
+          gh release upload ios-build GreatFootWear-unsigned.ipa --clobber

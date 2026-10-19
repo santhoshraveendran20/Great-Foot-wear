@@ -119,7 +119,7 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
         max_age=settings.REFRESH_TOKEN_DAYS * 86400,
         httponly=True,
         secure=settings.COOKIE_SECURE,
-        samesite="lax",
+        samesite=settings.COOKIE_SAMESITE,
         path="/api/auth",
     )
 
@@ -284,7 +284,7 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
         raise HTTPException(401, "Not authenticated")
     row = db.scalar(select(RefreshToken).where(RefreshToken.token_hash == sha256(token)))
     if not row or row.revoked_at or row.expires_at < utcnow():
-        response.delete_cookie(REFRESH_COOKIE, path="/api/auth")
+        response.delete_cookie(REFRESH_COOKIE, path="/api/auth", secure=settings.COOKIE_SECURE, samesite=settings.COOKIE_SAMESITE)
         raise HTTPException(401, "Session expired. Please log in again.")
     user = db.get(User, row.user_id)
     if not user or not user.is_active or user.deleted_at:
@@ -302,5 +302,5 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
         if row and not row.revoked_at:
             row.revoked_at = utcnow()
             db.commit()
-    response.delete_cookie(REFRESH_COOKIE, path="/api/auth")
+    response.delete_cookie(REFRESH_COOKIE, path="/api/auth", secure=settings.COOKIE_SECURE, samesite=settings.COOKIE_SAMESITE)
     return {"ok": True}

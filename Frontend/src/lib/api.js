@@ -17,7 +17,11 @@ export function onSessionExpired(fn) {
   return () => listeners.delete(fn)
 }
 
-export const api = axios.create({ baseURL: "/api", withCredentials: true })
+// Empty on the website (same origin, Vite proxy in dev). The Android app sets VITE_API_URL
+// to the public backend, e.g. https://api.example.com
+export const API_ORIGIN = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "")
+
+export const api = axios.create({ baseURL: `${API_ORIGIN}/api`, withCredentials: true })
 
 api.interceptors.request.use((config) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`
@@ -27,7 +31,7 @@ api.interceptors.request.use((config) => {
 export async function refreshSession() {
   if (!refreshing) {
     refreshing = axios
-      .post("/api/auth/refresh", null, { withCredentials: true })
+      .post(`${API_ORIGIN}/api/auth/refresh`, null, { withCredentials: true })
       .then((r) => {
         accessToken = r.data.access_token
         return r.data
