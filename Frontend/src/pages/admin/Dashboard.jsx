@@ -39,7 +39,7 @@ export default function Dashboard() {
           </Tabs>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {data.full && <StatCard title="Sales" value={formatINR(s.sales)} hint={`Avg. order ${formatINR(s.avg_order_value)}`} icon={IndianRupee} onClick={() => setDetails("sales")} />}
         <StatCard title="Orders" value={s.orders} icon={ShoppingCart} onClick={() => setDetails("orders")} />
         <StatCard title="New customers" value={s.new_customers} icon={UserPlus} onClick={() => setDetails("customers")} />
@@ -48,7 +48,7 @@ export default function Dashboard() {
       </div>
       <DashboardDetailsSheet metric={details} period={period} onClose={() => setDetails(null)} />
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">{data.full ? "Sales" : "Orders"} – last 30 days</CardTitle>
@@ -84,7 +84,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader><CardTitle className="text-base">Recent orders</CardTitle></CardHeader>
           <CardContent>

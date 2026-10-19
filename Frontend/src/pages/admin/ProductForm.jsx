@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { errorMessage } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import {
@@ -130,6 +131,103 @@ function F({ label, children, hint, className, required, error }) {
 }
 
 const cellError = (msg) => (msg ? "border-destructive" : undefined)
+
+/** Variant rows: a table on wider screens, one card per variant on phones. */
+function VariantsEditor({ variants, errors, setVariant, onRemove }) {
+  const isMobile = useIsMobile()
+  const field = (i, k) => ({ "aria-invalid": !!errors[`v.${i}.${k}`], title: errors[`v.${i}.${k}`] })
+  const cells = (x, i) => ({
+    sku: <Input className={cn("h-8 min-w-36", cellError(errors[`v.${i}.sku`]))} {...field(i, "sku")} aria-label="SKU" value={x.sku} onChange={(e) => setVariant(i, "sku", e.target.value.toUpperCase())} />,
+    size: <Input className={cn("h-8 w-16", cellError(errors[`v.${i}.size`]))} {...field(i, "size")} aria-label="Size" value={x.size} onChange={(e) => setVariant(i, "size", e.target.value)} />,
+    colour: <Input className={cn("h-8 w-28", cellError(errors[`v.${i}.colour`]))} {...field(i, "colour")} aria-label="Colour" value={x.colour} onChange={(e) => setVariant(i, "colour", e.target.value)} />,
+    stock: x.id ? <span className="px-2 font-medium">{x.stock_qty}</span> : (
+      <Input className={cn("h-8 w-20", cellError(errors[`v.${i}.stock_qty`]))} {...field(i, "stock_qty")} type="number" min={0} step={1} value={x.stock_qty} onChange={(e) => setVariant(i, "stock_qty", e.target.value)} aria-label="Opening stock" />
+    ),
+    price: <Input className={cn("h-8 w-24", cellError(errors[`v.${i}.price_override`]))} {...field(i, "price_override")} aria-label="Price override" type="number" min={0} step="0.01" placeholder="—" value={x.price_override} onChange={(e) => setVariant(i, "price_override", e.target.value)} />,
+    low: <Input className={cn("h-8 w-16", cellError(errors[`v.${i}.low_stock_threshold`]))} {...field(i, "low_stock_threshold")} aria-label="Low-stock at" type="number" min={0} step={1} placeholder={String(DEFAULT_LOW_STOCK)} value={x.low_stock_threshold} onChange={(e) => setVariant(i, "low_stock_threshold", e.target.value)} />,
+    active: <Switch checked={x.is_active} onCheckedChange={(c) => setVariant(i, "is_active", c)} aria-label="Active" />,
+    remove: (
+      <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => onRemove(i)} aria-label="Remove variant">
+        <Trash2 />
+      </Button>
+    ),
+  })
+  const none = "No variants yet. Use the generator above or add a row."
+  const req = <span className="text-destructive">*</span>
+
+  if (isMobile) {
+    if (!variants.length) return <p className="rounded-md border px-4 py-6 text-center text-sm text-muted-foreground">{none}</p>
+    return (
+      <ul className="space-y-3">
+        {variants.map((x, i) => {
+          const c = cells(x, i)
+          const line = (label, node) => (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">{label}</span>
+              {node}
+            </div>
+          )
+          return (
+            <li key={x.id ?? `new-${i}`} className="space-y-3 rounded-md border p-3 text-sm">
+              <div className="flex items-end gap-2">
+                <label className="min-w-0 flex-1 space-y-1">
+                  <span className="text-xs text-muted-foreground">SKU {req}</span>
+                  {c.sku}
+                </label>
+                {c.remove}
+              </div>
+              {line(<>Size {req}</>, c.size)}
+              {line(<>Colour {req}</>, c.colour)}
+              {line(<>{x.id ? "Stock" : "Opening stock"} {req}</>, c.stock)}
+              {line("Price override (₹)", c.price)}
+              {line("Low-stock at", c.low)}
+              {line("Active", c.active)}
+            </li>
+          )
+        })}
+      </ul>
+    )
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>SKU {req}</TableHead>
+            <TableHead>Size {req}</TableHead>
+            <TableHead>Colour {req}</TableHead>
+            <TableHead>Stock {req}</TableHead>
+            <TableHead>Price override (₹)</TableHead>
+            <TableHead>Low-stock at</TableHead>
+            <TableHead>Active</TableHead>
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {variants.length === 0 && (
+            <TableRow><TableCell colSpan={8} className="h-16 text-center text-muted-foreground">{none}</TableCell></TableRow>
+          )}
+          {variants.map((x, i) => {
+            const c = cells(x, i)
+            return (
+              <TableRow key={x.id ?? `new-${i}`}>
+                <TableCell>{c.sku}</TableCell>
+                <TableCell>{c.size}</TableCell>
+                <TableCell>{c.colour}</TableCell>
+                <TableCell>{c.stock}</TableCell>
+                <TableCell>{c.price}</TableCell>
+                <TableCell>{c.low}</TableCell>
+                <TableCell>{c.active}</TableCell>
+                <TableCell>{c.remove}</TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
 
 function VariantGenerator({ base, onAdd, onTypingChange }) {
   const [sizes, setSizes] = useState("")
@@ -548,47 +646,12 @@ export default function ProductForm() {
             onAdd={(rows) => setV((s) => ({ ...s, variants: [...s.variants, ...rows] }))}
             onTypingChange={setGeneratorTyping}
           />
-          <div className="overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>SKU <span className="text-destructive">*</span></TableHead>
-                  <TableHead>Size <span className="text-destructive">*</span></TableHead>
-                  <TableHead>Colour <span className="text-destructive">*</span></TableHead>
-                  <TableHead>Stock <span className="text-destructive">*</span></TableHead>
-                  <TableHead>Price override (₹)</TableHead>
-                  <TableHead>Low-stock at</TableHead>
-                  <TableHead>Active</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {v.variants.length === 0 && (
-                  <TableRow><TableCell colSpan={8} className="h-16 text-center text-muted-foreground">No variants yet. Use the generator above or add a row.</TableCell></TableRow>
-                )}
-                {v.variants.map((x, i) => (
-                  <TableRow key={x.id ?? `new-${i}`}>
-                    <TableCell><Input className={cn("h-8 min-w-36", cellError(errors[`v.${i}.sku`]))} aria-invalid={!!errors[`v.${i}.sku`]} title={errors[`v.${i}.sku`]} aria-label="SKU" value={x.sku} onChange={(e) => setVariant(i, "sku", e.target.value.toUpperCase())} /></TableCell>
-                    <TableCell><Input className={cn("h-8 w-16", cellError(errors[`v.${i}.size`]))} aria-invalid={!!errors[`v.${i}.size`]} title={errors[`v.${i}.size`]} aria-label="Size" value={x.size} onChange={(e) => setVariant(i, "size", e.target.value)} /></TableCell>
-                    <TableCell><Input className={cn("h-8 w-28", cellError(errors[`v.${i}.colour`]))} aria-invalid={!!errors[`v.${i}.colour`]} title={errors[`v.${i}.colour`]} aria-label="Colour" value={x.colour} onChange={(e) => setVariant(i, "colour", e.target.value)} /></TableCell>
-                    <TableCell>
-                      {x.id ? <span className="px-2 font-medium">{x.stock_qty}</span> : (
-                        <Input className={cn("h-8 w-20", cellError(errors[`v.${i}.stock_qty`]))} aria-invalid={!!errors[`v.${i}.stock_qty`]} title={errors[`v.${i}.stock_qty`]} type="number" min={0} step={1} value={x.stock_qty} onChange={(e) => setVariant(i, "stock_qty", e.target.value)} aria-label="Opening stock" />
-                      )}
-                    </TableCell>
-                    <TableCell><Input className={cn("h-8 w-24", cellError(errors[`v.${i}.price_override`]))} aria-invalid={!!errors[`v.${i}.price_override`]} title={errors[`v.${i}.price_override`]} aria-label="Price override" type="number" min={0} step="0.01" placeholder="—" value={x.price_override} onChange={(e) => setVariant(i, "price_override", e.target.value)} /></TableCell>
-                    <TableCell><Input className={cn("h-8 w-16", cellError(errors[`v.${i}.low_stock_threshold`]))} aria-invalid={!!errors[`v.${i}.low_stock_threshold`]} title={errors[`v.${i}.low_stock_threshold`]} aria-label="Low-stock at" type="number" min={0} step={1} placeholder={String(DEFAULT_LOW_STOCK)} value={x.low_stock_threshold} onChange={(e) => setVariant(i, "low_stock_threshold", e.target.value)} /></TableCell>
-                    <TableCell><Switch checked={x.is_active} onCheckedChange={(c) => setVariant(i, "is_active", c)} /></TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => setV((s) => ({ ...s, variants: s.variants.filter((_, j) => j !== i) }))} aria-label="Remove variant">
-                        <Trash2 />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <VariantsEditor
+            variants={v.variants}
+            errors={errors}
+            setVariant={setVariant}
+            onRemove={(i) => setV((s) => ({ ...s, variants: s.variants.filter((_, j) => j !== i) }))}
+          />
           <Button variant="outline" size="sm" onClick={() => setV((s) => ({ ...s, variants: [...s.variants, { sku: "", size: "", colour: "", stock_qty: 0, price_override: "", low_stock_threshold: 3, is_active: true }] }))}>
             <Plus /> Add row
           </Button>

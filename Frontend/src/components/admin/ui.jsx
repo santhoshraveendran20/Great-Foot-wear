@@ -1,9 +1,11 @@
 
+import { Fragment } from "react"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 
 export function PageHeader({ title, description, actions }) {
@@ -22,12 +24,12 @@ export function PageHeader({ title, description, actions }) {
 export function StatCard({ title, value, hint, icon: Icon, onClick }) {
   const card = (
     <Card className={onClick ? "h-full transition-colors group-hover:border-primary/50 group-hover:bg-accent/40" : undefined}>
-      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 p-4 pb-2 sm:p-6 sm:pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        {Icon && <Icon className="size-4 text-muted-foreground" />}
+        {Icon && <Icon className="size-4 shrink-0 text-muted-foreground" />}
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+      <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+        <div className="text-xl font-bold sm:text-2xl">{value}</div>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
         {onClick && <p className="mt-1 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">View details →</p>}
       </CardContent>
@@ -42,10 +44,12 @@ export function StatCard({ title, value, hint, icon: Icon, onClick }) {
 }
 
 /**
- * Simple data table on shadcn/ui Table.
+ * Simple data table on shadcn/ui Table. On phones each row is shown as a card instead.
  * columns: [{ key, header, cell?: (row) => node, className? }]
  */
 export function DataTable({ columns, rows, loading, empty = "No records found", onRowClick, rowKey = "id" }) {
+  const isMobile = useIsMobile()
+  if (isMobile) return <DataCards columns={columns} rows={rows} loading={loading} empty={empty} onRowClick={onRowClick} rowKey={rowKey} />
   return (
     <div className="overflow-x-auto rounded-md border bg-card">
       <Table>
@@ -69,6 +73,52 @@ export function DataTable({ columns, rows, loading, empty = "No records found", 
         </TableBody>
       </Table>
     </div>
+  )
+}
+
+/**
+ * Phone layout of DataTable: a leading column without a header (image) sits beside the first
+ * labelled column (title); other labelled columns become label / value lines; trailing columns
+ * without a header (actions) go at the bottom.
+ */
+function DataCards({ columns, rows, loading, empty, onRowClick, rowKey }) {
+  if (loading) return <div className="grid h-24 place-items-center rounded-md border bg-card"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>
+  if (!rows?.length) return <div className="grid h-24 place-items-center rounded-md border bg-card px-4 text-center text-sm text-muted-foreground">{empty}</div>
+
+  const media = columns[0]?.header ? null : columns[0]
+  const labelled = columns.filter((c) => c.header)
+  const trailing = columns.filter((c) => !c.header && c !== media)
+  const [title, ...fields] = labelled
+  const render = (c, r) => (c.cell ? c.cell(r) : r[c.key])
+
+  return (
+    <ul className="divide-y rounded-md border bg-card">
+      {rows.map((r, i) => (
+        <li
+          key={r[rowKey] ?? i}
+          onClick={onRowClick ? () => onRowClick(r) : undefined}
+          className={cn("space-y-3 p-4 text-sm", onRowClick && "cursor-pointer active:bg-muted/50")}
+        >
+          {(media || title) && (
+            <div className="flex items-start gap-3">
+              {media && <div className="shrink-0">{render(media, r)}</div>}
+              {title && <div className="min-w-0 flex-1 break-words">{render(title, r)}</div>}
+            </div>
+          )}
+          {fields.length > 0 && (
+            <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5">
+              {fields.map((c) => (
+                <Fragment key={c.key}>
+                  <dt className="text-muted-foreground">{c.header}</dt>
+                  <dd className="break-words text-right">{render(c, r)}</dd>
+                </Fragment>
+              ))}
+            </dl>
+          )}
+          {trailing.map((c) => <div key={c.key} className="flex flex-wrap justify-end gap-2">{render(c, r)}</div>)}
+        </li>
+      ))}
+    </ul>
   )
 }
 
